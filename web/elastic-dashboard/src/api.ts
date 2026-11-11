@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { dashboardSchema, jobSchema } from './model';
-import { demoDashboard, demoJobs } from './demo';
+import { clusterDashboardSchema, dashboardSchema, jobSchema } from './model';
+import { demoClusterDashboard, demoClusters, demoDashboard, demoJobs } from './demo';
 
 export type Mode = 'demo' | 'api';
 async function get(path: string, signal: AbortSignal) {
@@ -16,5 +16,15 @@ export async function loadDashboard(mode: Mode, uid: string, signal: AbortSignal
   if (mode === 'demo') return dashboardSchema.parse(demoDashboard(uid));
   const result = dashboardSchema.parse(await get(`/api/v1/elastic/jobs/${encodeURIComponent(uid)}/dashboard`, signal));
   if (result.job.uid !== uid) throw new Error('接口返回的作业 UID 不匹配，已拒绝显示。');
+  return result;
+}
+export async function loadClusters(mode: Mode, signal: AbortSignal) {
+  if (mode === 'demo') return demoClusters;
+  return z.object({ items: z.array(z.object({ name: z.string() })) }).parse(await get('/api/v1/elastic/clusters', signal)).items;
+}
+export async function loadClusterDashboard(mode: Mode, cluster: string, signal: AbortSignal) {
+  if (mode === 'demo') return clusterDashboardSchema.parse(demoClusterDashboard(cluster));
+  const result = clusterDashboardSchema.parse(await get(`/api/v1/elastic/clusters/${encodeURIComponent(cluster)}/dashboard`, signal));
+  if (result.cluster !== cluster) throw new Error('接口返回的集群名称不匹配，已拒绝显示。');
   return result;
 }

@@ -31,10 +31,24 @@ export const dashboardSchema = z.object({
   series: z.object({ work_unit: z.enum(['steps', 'samples', 'tokens', 'unknown']), points: z.array(z.object({ at: timestamp, gpus: number.nonnegative().nullable(), throughput: number.nonnegative().nullable() })) }),
   events: z.array(eventSchema), missing_data: z.array(z.string()),
 });
+export const clusterJobSchema = z.object({
+  uid: z.string(), name: z.string(),
+  status: z.enum(['running', 'completed', 'failed', 'unknown']),
+  submitted_at: timestamp.nullable(), completed_at: timestamp.nullable(),
+  jct_seconds: number.nonnegative().nullable(),
+  elastic: z.boolean(), elastic_profile: z.string().nullable(),
+  elastic_count: number.int().nonnegative().nullable(),
+});
+export const clusterDashboardSchema = z.object({
+  schema_version: z.literal(1), generated_at: timestamp, cluster: z.string(),
+  jobs: z.array(clusterJobSchema), missing_data: z.array(z.string()),
+});
 export type Dashboard = z.infer<typeof dashboardSchema>;
 export type ElasticEvent = z.infer<typeof eventSchema>;
 export type Evaluation = z.infer<typeof evaluationSchema>;
 export type Job = z.infer<typeof jobSchema>;
+export type ClusterDashboard = z.infer<typeof clusterDashboardSchema>;
+export type ClusterJob = z.infer<typeof clusterJobSchema>;
 export const objectiveLabel = { time: '剩余时间收益率', gpu_hours: '卡时收益率', cluster_jct: '集群加权 JCT 收益率', unknown: '收益率（目标未知）' };
 export function finite(value: number | null | undefined): value is number { return typeof value === 'number' && Number.isFinite(value); }
 export function fmt(value: number | null | undefined, unit = '', signed = false) { return finite(value) ? `${signed && value > 0 ? '+' : ''}${Number(value.toFixed(2)).toLocaleString('zh-CN')}${unit ? ` ${unit}` : ''}` : '—'; }
@@ -59,4 +73,53 @@ export function dateTime(at: number | null | undefined) {
 export function gainValue(e: Evaluation | null, key: 'time_gain_seconds' | 'gpu_seconds_saved' | 'gain_ratio') { return e?.valid && finite(e[key]) ? e[key] : null; }
 export function filteredEvents(events: ElasticEvent[], filter: string, query: string, from: number) {
   return events.filter(e => e.occurred_at >= from && (filter === 'all' || e.type === filter || e.execution_status === filter) && `${e.id} ${e.plan_id ?? ''} ${e.trigger} ${e.reason}`.toLowerCase().includes(query.toLowerCase())).sort((a,b) => b.occurred_at-a.occurred_at);
+}
+function mean(values: number[]) { return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null; }
+export function median(values: number[]) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b), middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+export function completedJct(job: ClusterJob) {
+  return job.status === 'completed' && finite(job.jct_seconds) ? job.jct_seconds : null;
+}
+export type CohortStats = { total: number; completed: number; avgJct: number | null; elasticTasks: number; recordedElastic: number; totalElastic: number; avgElastic: number | null };
+export function cohortStats(jobs: ClusterJob[]): CohortStats {
+  const jcts = jobs.map(completedJct).filter(finite);
+  const elasticJobs = jobs.filter(job => job.elastic);
+  const counts = elasticJobs.map(job => job.elastic_count).filter(finite);
+  return {
+    total: jobs.length, completed: jcts.length, avgJct: mean(jcts),
+    elasticTasks: elasticJobs.length, recordedElastic: counts.length,
+    totalElastic: counts.reduce((sum, count) => sum + count, 0), avgElastic: mean(counts),
+  };
+}
+export function compareCohorts(base: CohortStats, candidate: CohortStats) {
+  const delta = finite(base.avgJct) && finite(candidate.avgJct) ? candidate.avgJct - base.avgJct : null;
+  const ratio = finite(delta) && finite(base.avgJct) && base.avgJct > 0 ? delta / base.avgJct : null;
+  return { delta, ratio };
+}
+export type ElasticProfileStats = { name: string; stats: CohortStats };
+export function elasticProfiles(jobs: ClusterJob[]): ElasticProfileStats[] {
+  const groups = new Map<string, ClusterJob[]>();
+  for (const job of jobs) {
+    if (!job.elastic) continue;
+    const name = job.elastic_profile?.trim() || '未标注弹性方案';
+    groups.set(name, [...(groups.get(name) ?? []), job]);
+  }
+  return [...groups.entries()].map(([name, members]) => ({ name, stats: cohortStats(members) }));
+}
+export function elasticCountBuckets(jobs: ClusterJob[]) {
+  const buckets = [
+    { label: '1-2 次', min: 1, max: 2, count: 0 },
+    { label: '3-4 次', min: 3, max: 4, count: 0 },
+    { label: '5-6 次', min: 5, max: 6, count: 0 },
+    { label: '7 次以上', min: 7, max: Infinity, count: 0 },
+  ];
+  for (const job of jobs) {
+    if (!job.elastic || !finite(job.elastic_count)) continue;
+    const bucket = buckets.find(item => job.elastic_count! >= item.min && job.elastic_count! <= item.max);
+    if (bucket) bucket.count += 1;
+  }
+  return buckets;
 }

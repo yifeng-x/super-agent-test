@@ -88,3 +88,44 @@ h2{font-weight:750}
 @media(min-width:951px){.trend-svg{max-height:none}}
 .empty-track-stages{display:flex;flex-wrap:wrap;gap:12px 24px;padding-left:20px;text-align:left;color:#52657e;font-size:12px}
 .empty-track-stages time{color:#1769ff}
+/* 任务级 / 集群级观测切换，沿用现有蓝色主色与圆角面板节奏。 */
+.scope-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 0}
+.scope-tabs{display:inline-flex;align-items:center;gap:3px;background:#eef3fb;border:1px solid #e1e8f3;border-radius:9px;padding:3px}
+.scope-tabs button{border:0;background:transparent;box-shadow:none;color:#647089;font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px}
+.scope-tabs button:hover{background:#e4edfc}
+.scope-tabs button.active{background:#fff;color:#1769ff;box-shadow:0 1px 3px #1a395514}
+.scope-note{font-size:11px;color:#8b97aa}
+/* 集群级观测：JCT 对比与弹性次数汇总。 */
+.cluster-compare-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.compare-panel{padding-bottom:14px}
+.compare-panel .compare-controls{display:flex;gap:10px;flex-wrap:wrap;margin:-2px 0 16px}
+.compare-controls label{display:flex;align-items:center;gap:7px;font-size:11px;color:#69788e;min-width:0;white-space:nowrap}
+.compare-controls select{padding:5px 26px 5px 9px;font-size:11px;max-width:190px}
+.compare-bars{padding:6px 2px 16px;gap:16px}
+.compare-bars .bar-row>span{width:150px;line-height:1.4}
+.compare-bars .bar-row>span small{display:block;margin-left:0;margin-top:2px}
+.compare-bars .bar-row b{min-width:62px}
+.compare-summary{display:flex;align-items:center;gap:10px;border-radius:8px;padding:11px 13px;background:#f1f6ff;color:#3c71d0;font-size:12px}
+.compare-summary svg{flex-shrink:0}
+.compare-summary strong{display:block;font-size:15px;font-weight:700;letter-spacing:-.2px}
+.compare-summary span{display:block;margin-top:2px;font-size:11px;color:#6d7f99}
+.compare-summary.better{background:#edf9f1;color:#148b43}
+.compare-summary.worse{background:#fff6e8;color:#b67908}
+.compare-summary.neutral{background:#f2f5fa;color:#5d6c82}
+.elastic-layout{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:28px;align-items:center;padding:4px 2px 15px}
+.elastic-hero{border-right:1px solid #e7ebf3;padding-right:22px}
+.elastic-value{font-size:44px;font-weight:750;letter-spacing:-1.4px;line-height:1.2;color:#1769ff}
+.elastic-value small{font-size:13px;font-weight:600;color:#7c899d;letter-spacing:0;margin-left:5px}
+.elastic-sub{font-size:11px;margin-top:5px}
+.elastic-note{display:flex;align-items:center;gap:6px;font-size:10px;color:#a06a00;background:#fff8e9;border:1px solid #f2e1b9;border-radius:6px;padding:7px 9px;margin-top:10px}
+.distribution{display:grid;gap:9px}
+.distribution-title{font-size:12px;font-weight:600;color:#354761;margin-bottom:3px}
+.dist-row{display:grid;grid-template-columns:58px minmax(0,1fr) 40px;align-items:center;gap:10px;font-size:11px;color:#69788e}
+.dist-track{height:14px;border-radius:4px;background:#f3f6fb;overflow:hidden}
+.dist-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#5f9bff,#1769ff)}
+.dist-row b{text-align:right;font-size:11px;color:#46546a;font-weight:600}
+.job-name{font-weight:600;color:#294b7c}
+@media(min-width:1600px){.cluster-compare-grid{gap:14px}.elastic-layout{gap:34px}}
+@media(max-width:1200px){.cluster-compare-grid{grid-template-columns:1fr}.elastic-layout{grid-template-columns:1fr;gap:18px}.elastic-hero{border-right:0;border-bottom:1px solid #e7ebf3;padding-right:0;padding-bottom:14px}}
+@media(max-width:950px){.compare-bars .bar-row>span{width:120px}}
+@media(max-width:580px){.scope-note{display:none}.scope-tabs{width:100%}.scope-tabs button{flex:1;justify-content:center}.compare-controls label{width:100%;justify-content:flex-start}.compare-controls select{flex:1 1 auto;max-width:none;width:auto;min-width:0}.compare-bars .bar-row>span{width:96px}.elastic-layout{gap:14px}.elastic-value{font-size:34px}}
